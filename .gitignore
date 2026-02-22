@@ -131,7 +131,7 @@ secrets.yml
 *.pem
 *.key
 *.crt
-
+creds_string.txt
 # OS
 Thumbs.db
 ehthumbs.db
