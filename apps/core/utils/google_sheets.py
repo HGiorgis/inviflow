@@ -15,28 +15,54 @@ class GoogleSheetsClient:
         self.sheet = self.client.open_by_key(self.sheet_id)
     
     def _authenticate(self):
-        """Authenticate with Google Sheets API"""
+        """Authenticate with Google Sheets API using environment variable"""
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive",
             "https://www.googleapis.com/auth/spreadsheets"
         ]
         
-        # Get credentials from file or environment
-        creds_file = os.path.join(settings.BASE_DIR, 'credentials.json')
+        # Get credentials from environment variable (minified JSON)
+        creds_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
         
-        if os.path.exists(creds_file):
-            creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file, scope)
-        else:
-            # Try to get from environment variable
+        if not creds_json:
+            # Fallback to environment variable with different name
             creds_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS_JSON')
-            if creds_json:
+            
+        if creds_json:
+            try:
+                # Parse the JSON string
                 creds_dict = json.loads(creds_json)
                 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-            else:
-                raise Exception('No Google Sheets credentials found')
+                logger.info("✅ Authenticated using GOOGLE_SHEETS_CREDENTIALS environment variable")
+                return gspread.authorize(creds)
+            except json.JSONDecodeError as e:
+                logger.error(f"❌ Failed to parse GOOGLE_SHEETS_CREDENTIALS JSON: {e}")
+                logger.error("Make sure the environment variable contains valid minified JSON")
+                raise Exception(f"Invalid JSON in GOOGLE_SHEETS_CREDENTIALS: {e}")
+            except Exception as e:
+                logger.error(f"❌ Failed to authenticate with credentials from environment: {e}")
+                raise
         
-        return gspread.authorize(creds)
+        # If no environment variable, try credentials.json file (for local development)
+        creds_file = os.path.join(settings.BASE_DIR, 'credentials.json')
+        if os.path.exists(creds_file):
+            try:
+                creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file, scope)
+                logger.info("✅ Authenticated using credentials.json file (local development)")
+                return gspread.authorize(creds)
+            except Exception as e:
+                logger.error(f"❌ Failed to authenticate with credentials.json: {e}")
+                raise
+        
+        # No credentials found
+        error_msg = (
+            "❌ No Google Sheets credentials found.\n"
+            "Please set GOOGLE_SHEETS_CREDENTIALS environment variable with your minified service account JSON.\n"
+            "For local development, you can also place credentials.json in the project root."
+        )
+        logger.error(error_msg)
+        raise Exception(error_msg)
     
     def get_deposits_worksheet(self):
         """Get the worksheet containing deposit data (Sheet 2)"""

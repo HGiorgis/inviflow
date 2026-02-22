@@ -6,7 +6,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+
+# Handle ALLOWED_HOSTS more robustly
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+
+# Add Render.com host if present (for production)
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 INSTALLED_APPS = [
@@ -19,7 +26,7 @@ INSTALLED_APPS = [
     
     # Third party
     'django_extensions',
-    # 'django_cron',
+    # 'django_cron',  # Commented out as per your setup
     
     # Local apps
     'apps.core',
@@ -57,22 +64,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'inviflow.wsgi.application'
 
-# Database
+# Database - Use SQLite for development, can be overridden with DATABASE_URL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# For production with PostgreSQL (uncomment when needed)
+# import dj_database_url
 # DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': config('DB_NAME'),
-#         'USER': config('DB_USER'),
-#         'PASSWORD': config('DB_PASSWORD'),
-#         'HOST': config('DB_HOST'),
-#         'PORT': config('DB_PORT'),
-#     }
+#     'default': dj_database_url.config(
+#         default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+#         conn_max_age=600
+#     )
 # }
 
 # Password validation
@@ -98,27 +104,56 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Invoices directory
+# Invoices directory - ensure it exists
 INVOICES_DIR = BASE_DIR / 'invoices'
+os.makedirs(INVOICES_DIR, exist_ok=True)
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Cron settings
-CRON_CLASSES = [
-    'apps.portfolio.cron.GoogleSheetsSyncCronJob',
-    'apps.payments.cron.InvoiceCleanupCronJob',
-]
-# Google Sheets Configuration
-GOOGLE_SHEETS_CREDENTIALS = config('GOOGLE_SHEETS_CREDENTIALS', default='credentials.json')
+# Cron settings (commented out as per your setup)
+# CRON_CLASSES = [
+#     'apps.portfolio.cron.GoogleSheetsSyncCronJob',
+#     'apps.payments.cron.InvoiceCleanupCronJob',
+# ]
+
+# ========== GOOGLE SHEETS CONFIGURATION ==========
 GOOGLE_SHEETS_ID = config('GOOGLE_SHEETS_ID', default='')
 
-# Celery (optional)
-CELERY_BROKER_URL = config('REDIS_URL')
-CELERY_RESULT_BACKEND = config('REDIS_URL')
+# Google Sheets Credentials
+GOOGLE_SHEETS_CREDENTIALS = config('GOOGLE_SHEETS_CREDENTIALS', default='credentials.json')
+
+# Optional: Log credentials source for debugging (only in development)
+if DEBUG:
+    if os.environ.get('GOOGLE_SHEETS_CREDENTIALS'):
+        print("✅ Using GOOGLE_SHEETS_CREDENTIALS from environment variable")
+    else:
+        print("📁 Using credentials.json file for Google Sheets (local development)")
+# ==================================================
+
+# Celery (optional) - make these optional with defaults
+CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379')
+CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379')
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+# Security settings for production
+if not DEBUG:
+    # HTTPS settings
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # HSTS settings
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Other security settings
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
 
 # Logging configuration
 LOGGING = {
@@ -178,6 +213,11 @@ LOGGING = {
             'propagate': False,
         },
         'celery': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'google_sheets': {  # Add this for Google Sheets specific logging
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
