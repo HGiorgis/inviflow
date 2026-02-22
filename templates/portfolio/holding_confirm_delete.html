@@ -1,0 +1,275 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Delete Holding -
+InviFlow{% endblock %} {% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <span class="web3-badge">
+        <i class="fas fa-exclamation-triangle text-danger"></i>
+        Confirm Deletion
+      </span>
+    </div>
+    <h1 class="display-6 fw-bold mb-2">Delete Holding</h1>
+    <p class="text-secondary">This action cannot be undone</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mx-auto">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Confirm Deletion
+      </div>
+      <div class="card-body p-4">
+        <!-- Warning Icon -->
+        <div class="text-center mb-4">
+          <div class="warning-icon mx-auto mb-3">
+            <i class="fas fa-exclamation-triangle fa-4x text-danger"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Are you absolutely sure?</h5>
+          <p class="text-secondary">
+            This action cannot be undone. This will permanently delete the
+            holding.
+          </p>
+        </div>
+
+        <!-- Holding Details -->
+        <div
+          class="holding-details p-4 rounded-3 mb-4"
+          style="background: var(--gray-1)"
+        >
+          <h6 class="fw-semibold mb-3">
+            <i
+              class="fas fa-info-circle me-2"
+              style="color: var(--primary)"
+            ></i>
+            Holding Details
+          </h6>
+
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="stock-icon">
+              <div
+                class="rounded-circle bg-primary-light d-flex align-items-center justify-content-center"
+                style="width: 48px; height: 48px"
+              >
+                <i class="fas fa-chart-line" style="color: var(--primary)"></i>
+              </div>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-1">{{ object.stock.symbol }}</h5>
+              <small class="text-secondary">{{ object.stock.name }}</small>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="detail-item p-2 rounded-3" style="background: white">
+                <small class="text-secondary d-block">Portfolio</small>
+                <span class="fw-semibold">{{ object.portfolio.name }}</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="detail-item p-2 rounded-3" style="background: white">
+                <small class="text-secondary d-block">Quantity</small>
+                <span class="fw-semibold"
+                  >{{ object.quantity|floatformat:4 }}</span
+                >
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="detail-item p-2 rounded-3" style="background: white">
+                <small class="text-secondary d-block">Avg Buy Price</small>
+                <span class="fw-semibold"
+                  >${{ object.average_buy_price|floatformat:2 }}</span
+                >
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="detail-item p-2 rounded-3" style="background: white">
+                <small class="text-secondary d-block">Current Value</small>
+                <span class="fw-semibold amount"
+                  >${{ object.current_value|floatformat:2 }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Impact Warning -->
+        <div
+          class="impact-warning p-3 rounded-3 mb-4"
+          style="
+            background: rgba(255, 59, 48, 0.05);
+            border-left: 4px solid var(--danger);
+          "
+        >
+          <div class="d-flex gap-2">
+            <i class="fas fa-info-circle text-danger mt-1"></i>
+            <div>
+              <strong class="d-block mb-1"
+                >What happens when you delete this holding?</strong
+              >
+              <ul class="text-secondary small mb-0 ps-3">
+                <li>
+                  The holding will be permanently removed from your portfolio
+                </li>
+                <li>
+                  All transaction history for this holding will be deleted
+                </li>
+                <li>Your portfolio value will be recalculated</li>
+                <li>This action cannot be reversed</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Form -->
+        <form method="post" id="deleteForm">
+          {% csrf_token %}
+
+          <!-- Confirmation Checkbox -->
+          <div class="form-check mb-4">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="confirmDelete"
+              required
+            />
+            <label class="form-check-label" for="confirmDelete">
+              I understand that this action cannot be undone
+            </label>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex gap-3">
+            <button
+              type="submit"
+              class="btn btn-danger px-4 py-2 flex-grow-1"
+              id="deleteBtn"
+              disabled
+            >
+              <i class="fas fa-trash me-2"></i>
+              Yes, Delete Holding
+            </button>
+            <a
+              href="{% url 'portfolio:detail' object.portfolio.pk %}"
+              class="btn btn-outline-secondary px-4 py-2"
+            >
+              <i class="fas fa-times me-2"></i>
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Alternative Actions Card -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <i class="fas fa-lightbulb me-2" style="color: var(--primary)"></i>
+        Alternative Actions
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2">
+          <a
+            href="{% url 'portfolio:update_holding' object.pk %}"
+            class="btn btn-outline-primary flex-grow-1"
+          >
+            <i class="fas fa-edit me-2"></i>
+            Edit Holding
+          </a>
+          <button
+            class="btn btn-outline-success flex-grow-1"
+            onclick="showAddMoreModal()"
+          >
+            <i class="fas fa-plus me-2"></i>
+            Add More
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Enable delete button only when checkbox is checked
+  document
+    .getElementById("confirmDelete")
+    .addEventListener("change", function () {
+      document.getElementById("deleteBtn").disabled = !this.checked;
+    });
+
+  // Form submission with confirmation
+  document
+    .getElementById("deleteForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      if (
+        confirm(
+          "Are you absolutely sure? This will permanently delete this holding.",
+        )
+      ) {
+        showToast("Deleting holding...", "warning");
+        setTimeout(() => {
+          this.submit();
+        }, 1500);
+      }
+    });
+
+  function showAddMoreModal() {
+    showToast("Add more feature coming soon", "info");
+  }
+</script>
+
+<style>
+  .holding-details {
+    border: 1px solid var(--gray-3);
+  }
+
+  .detail-item {
+    border: 1px solid var(--gray-3);
+    transition: var(--transition);
+  }
+
+  .detail-item:hover {
+    border-color: var(--primary);
+  }
+
+  .amount {
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .warning-icon {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .impact-warning {
+    border: 1px solid rgba(255, 59, 48, 0.2);
+  }
+
+  .form-check-input:checked {
+    background-color: var(--danger);
+    border-color: var(--danger);
+  }
+
+  .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.25);
+    border-color: var(--danger);
+  }
+</style>
+{% endblock %}

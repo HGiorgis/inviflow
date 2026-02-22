@@ -1,0 +1,449 @@
+{% extends 'base.html' %}{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-5">
+  <div>
+    <h1 class="display-6 fw-bold mb-2">Available Stocks</h1>
+    <p class="text-secondary">Browse and invest in top performing stocks</p>
+  </div>
+  <div class="d-flex gap-3">
+    <div class="input-group" style="width: 300px">
+      <span class="input-group-text bg-transparent border-end-0">
+        <i class="fas fa-search" style="color: var(--primary)"></i>
+      </span>
+      <input
+        type="text"
+        class="form-control border-start-0"
+        id="stockSearch"
+        placeholder="Search stocks..."
+        onkeyup="filterStocks()"
+      />
+    </div>
+    <button
+      class="btn btn-outline-secondary"
+      onclick="window.location.reload()"
+    >
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Stocks Table -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="stocksTable">
+        <thead class="bg-light">
+          <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Change</th>
+            <th>Volume</th>
+            <th>Market Cap</th>
+            <th>Sector</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in stocks %}
+          <tr
+            class="stock-row"
+            data-sector="{{ stock.sector|lower }}"
+            data-name="{{ stock.name|lower }}"
+            data-symbol="{{ stock.symbol|lower }}"
+          >
+            <td>
+              <strong class="text-primary">{{ stock.symbol }}</strong>
+            </td>
+            <td>{{ stock.name }}</td>
+            <td>
+              <span class="fw-semibold"
+                >${{ stock.current_price|floatformat:2 }}</span
+              >
+            </td>
+            <td>
+              {% with change=stock.change_percent|default:0 %}
+              <span
+                class="badge {% if change > 0 %}badge-success{% else %}badge-danger{% endif %}"
+              >
+                <i
+                  class="fas fa-arrow-{% if change > 0 %}up{% else %}down{% endif %} me-1"
+                ></i>
+                {{ change|floatformat:2 }}%
+              </span>
+              {% endwith %}
+            </td>
+            <td class="text-secondary">
+              {{ stock.volume|default:"-"|floatformat:0 }}
+            </td>
+            <td class="text-secondary">
+              ${{ stock.market_cap|default:"0"|floatformat:0 }}
+            </td>
+            <td>
+              <span class="badge badge-secondary"
+                >{{ stock.sector|default:"N/A" }}</span
+              >
+            </td>
+            <td>
+              <div class="btn-group">
+                <a
+                  href="{% url 'core:stock_detail' stock.symbol %}"
+                  class="btn btn-sm btn-outline-primary"
+                  title="View Details"
+                >
+                  <i class="fas fa-chart-line"></i>
+                </a>
+                {% if user.is_authenticated %}
+                <button
+                  class="btn btn-sm btn-outline-success"
+                  onclick="quickBuy('{{ stock.symbol }}')"
+                  title="Quick Buy"
+                >
+                  <i class="fas fa-shopping-cart"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-warning"
+                  onclick="addToWatchlist('{{ stock.symbol }}')"
+                  title="Add to Watchlist"
+                >
+                  <i class="fas fa-star"></i>
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5">
+              <i
+                class="fas fa-chart-line fa-3x mb-3"
+                style="color: var(--gray-4)"
+              ></i>
+              <h6 class="fw-normal mb-2">No stocks available</h6>
+              <p class="text-secondary small">Check back later for updates</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if stocks %}
+  <div
+    class="card-footer bg-white d-flex justify-content-between align-items-center"
+  >
+    <div class="text-secondary">
+      Showing
+      <span class="fw-semibold" id="visibleCount">{{ stocks|length }}</span> of
+      <span class="fw-semibold">{{ stocks|length }}</span> stocks
+    </div>
+
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item disabled">
+          <a class="page-link" href="#" tabindex="-1">Previous</a>
+        </li>
+        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">3</a></li>
+        <li class="page-item">
+          <a class="page-link" href="#">Next</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Market Movers -->
+<div class="row mt-5">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-fire me-2" style="color: var(--primary)"></i>
+        Market Movers
+      </div>
+      <div class="card-body">
+        <div class="row g-4">
+          <!-- Top Gainers -->
+          <div class="col-md-6">
+            <h6 class="fw-semibold mb-3">
+              <i class="fas fa-arrow-up text-success me-2"></i>
+              Top Gainers
+            </h6>
+            <div class="movers-list">
+              {% for stock in stocks|slice:":3" %}
+              <div
+                class="mover-item d-flex justify-content-between align-items-center p-3 mb-2 rounded-3"
+                style="background: var(--gray-1)"
+              >
+                <div>
+                  <span class="fw-semibold">{{ stock.symbol }}</span>
+                  <small class="text-secondary ms-2"
+                    >{{ stock.name|truncatechars:25 }}</small
+                  >
+                </div>
+                <div class="text-success">
+                  <i class="fas fa-arrow-up me-1"></i>
+                  +{{ stock.change_percent|default:"0"|floatformat:2 }}%
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Top Losers -->
+          <div class="col-md-6">
+            <h6 class="fw-semibold mb-3">
+              <i class="fas fa-arrow-down text-danger me-2"></i>
+              Top Losers
+            </h6>
+            <div class="movers-list">
+              {% for stock in stocks|slice:":3" %}
+              <div
+                class="mover-item d-flex justify-content-between align-items-center p-3 mb-2 rounded-3"
+                style="background: var(--gray-1)"
+              >
+                <div>
+                  <span class="fw-semibold">{{ stock.symbol }}</span>
+                  <small class="text-secondary ms-2"
+                    >{{ stock.name|truncatechars:25 }}</small
+                  >
+                </div>
+                <div class="text-danger">
+                  <i class="fas fa-arrow-down me-1"></i>
+                  {{ stock.change_percent|default:"0"|floatformat:2 }}%
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Filter stocks by search
+  function filterStocks() {
+    const searchInput = document
+      .getElementById("stockSearch")
+      .value.toLowerCase();
+    const rows = document.querySelectorAll(".stock-row");
+    let visibleCount = 0;
+
+    rows.forEach((row) => {
+      const symbol = row.dataset.symbol;
+      const name = row.dataset.name;
+
+      if (symbol.includes(searchInput) || name.includes(searchInput)) {
+        row.style.display = "";
+        visibleCount++;
+      } else {
+        row.style.display = "none";
+      }
+    });
+
+    document.getElementById("visibleCount").textContent = visibleCount;
+  }
+
+  // Filter by sector
+  function filterBySector(sector) {
+    const rows = document.querySelectorAll(".stock-row");
+    let visibleCount = 0;
+
+    // Update active button
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.classList.remove("active");
+    });
+    event.target.classList.add("active");
+
+    rows.forEach((row) => {
+      if (sector === "all" || row.dataset.sector === sector) {
+        row.style.display = "";
+        visibleCount++;
+      } else {
+        row.style.display = "none";
+      }
+    });
+
+    document.getElementById("visibleCount").textContent = visibleCount;
+  }
+
+  // Quick buy function
+  function quickBuy(symbol) {
+    showToast(`Quick buy initiated for ${symbol}`, "info");
+    setTimeout(() => {
+      window.location.href = `{% url 'core:stock_detail' 'SYMBOL' %}`.replace(
+        "SYMBOL",
+        symbol,
+      );
+    }, 1500);
+  }
+
+  // Add to watchlist function
+  function addToWatchlist(symbol) {
+    showToast(`${symbol} added to watchlist!`, "success");
+  }
+
+  // Sort table functionality
+  document.querySelectorAll("th[data-sort]").forEach((header) => {
+    header.addEventListener("click", () => {
+      const column = header.dataset.sort;
+      const rows = Array.from(document.querySelectorAll(".stock-row"));
+      const tbody = document.querySelector("#stocksTable tbody");
+
+      rows.sort((a, b) => {
+        let aVal = a.querySelector(
+          `td:nth-child(${getColumnIndex(column)})`,
+        ).textContent;
+        let bVal = b.querySelector(
+          `td:nth-child(${getColumnIndex(column)})`,
+        ).textContent;
+
+        if (column === "price" || column === "change") {
+          aVal = parseFloat(aVal.replace("$", ""));
+          bVal = parseFloat(bVal.replace("$", ""));
+        }
+
+        return aVal > bVal ? 1 : -1;
+      });
+
+      rows.forEach((row) => tbody.appendChild(row));
+    });
+  });
+
+  function getColumnIndex(column) {
+    const columns = {
+      symbol: 1,
+      name: 2,
+      price: 3,
+      change: 4,
+      volume: 5,
+      marketCap: 6,
+    };
+    return columns[column] || 1;
+  }
+
+  // Auto-refresh data every 30 seconds
+  setInterval(() => {
+    // In production, this would fetch new data via AJAX
+    showToast("Refreshing market data...", "info");
+  }, 30000);
+</script>
+
+<style>
+  /* Stock list specific styles */
+  .stock-row {
+    transition: var(--transition);
+  }
+
+  .stock-row:hover {
+    background: var(--gray-1) !important;
+    transform: translateX(5px);
+  }
+
+  .filter-btn {
+    border-radius: 100px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+  }
+
+  .filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
+  .filter-btn:hover:not(.active) {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .mover-item {
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .mover-item:hover {
+    transform: translateX(5px);
+    background: var(--gray-2) !important;
+  }
+
+  .badge-success {
+    background: rgba(0, 211, 143, 0.1);
+    color: var(--success);
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  .badge-danger {
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--danger);
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  .badge-secondary {
+    background: var(--gray-2);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  .btn-group .btn {
+    margin: 0 2px;
+    transition: var(--transition);
+  }
+
+  .btn-group .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .web3-badge {
+    background: var(--gray-2);
+    color: var(--text-secondary);
+    padding: 0.4rem 1rem;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .page-link {
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0 2px;
+    border-radius: 8px !important;
+  }
+
+  .page-link:hover {
+    background: var(--gray-1);
+    color: var(--primary);
+  }
+
+  .page-item.active .page-link {
+    background: var(--primary);
+    color: white;
+  }
+
+  .input-group-text {
+    border: 1px solid var(--gray-3);
+  }
+
+  .form-control {
+    border: 1px solid var(--gray-3);
+  }
+
+  .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.1);
+  }
+</style>
+{% endblock %}

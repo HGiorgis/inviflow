@@ -1,0 +1,257 @@
+{% extends 'base.html' %} 
+{% load static %} 
+{% block title %}My Portfolios - InviFlow{% endblock %} 
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <span class="web3-badge">
+        <i class="fas fa-briefcase"></i>
+        My Portfolios
+      </span>
+      <span class="web3-badge">
+        <i class="fas fa-chart-line"></i>
+        {{ portfolios|length }} Total
+      </span>
+    </div>
+    <h1 class="display-6 fw-bold mb-2">My Portfolios</h1>
+    <p class="text-secondary">Manage and track all your investment portfolios</p>
+  </div>
+  <a href="{% url 'portfolio:create' %}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>
+    New Portfolio
+  </a>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="stat-label">Total Value</span>
+          <div class="stat-value">${{ total_value|default:"0"|floatformat:2 }}</div>
+        </div>
+        <div class="stat-icon">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="stat-label">Total Holdings</span>
+          <div class="stat-value">{{ total_holdings|default:"0" }}</div>
+        </div>
+        <div class="stat-icon" style="background: rgba(0, 211, 143, 0.1); color: var(--success);">
+          <i class="fas fa-chart-pie"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="stat-label">Avg Return</span>
+          <div class="stat-value text-success">+{{ avg_return|default:"0"|floatformat:1 }}%</div>
+        </div>
+        <div class="stat-icon" style="background: rgba(0, 211, 143, 0.1); color: var(--success);">
+          <i class="fas fa-chart-line"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Portfolio Grid -->
+{% if portfolios %}
+<div class="row g-4">
+  {% for portfolio in portfolios %}
+  <div class="col-md-6 col-lg-4">
+    <div class="portfolio-card card h-100">
+      <div class="card-body">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <div class="portfolio-icon">
+              <div class="rounded-circle bg-primary-light d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="fas fa-briefcase" style="color: var(--primary);"></i>
+              </div>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-1">{{ portfolio.name }}</h5>
+              <small class="text-secondary">Created {{ portfolio.created_at|date:"M d, Y" }}</small>
+            </div>
+          </div>
+          <span class="badge badge-primary">${{ portfolio.total_value|floatformat:0 }}</span>
+        </div>
+
+        <!-- Description -->
+        <p class="text-secondary small mb-3">
+          {{ portfolio.description|default:"No description"|truncatechars:60 }}
+        </p>
+
+        <!-- Stats -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="stat-mini p-2 rounded-3" style="background: var(--gray-1);">
+              <small class="text-secondary d-block">Holdings</small>
+              <span class="fw-semibold">{{ portfolio.holdings.count }}</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="stat-mini p-2 rounded-3" style="background: var(--gray-1);">
+              <small class="text-secondary d-block">Last Updated</small>
+              <span class="fw-semibold">{{ portfolio.updated_at|date:"M d" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Bar -->
+        <div class="performance-bar mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <small class="text-secondary">Performance</small>
+            <small class="{% if portfolio.performance > 0 %}text-success{% else %}text-danger{% endif %}">
+              {% if portfolio.performance > 0 %}+{% endif %}{{ portfolio.performance|default:"0"|floatformat:1 }}%
+            </small>
+          </div>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar {% if portfolio.performance > 0 %}bg-success{% else %}bg-danger{% endif %}" 
+                 style="width: {{ portfolio.performance|default:"0"|floatformat:0 }}%"></div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex gap-2">
+          <a href="{% url 'portfolio:detail' portfolio.pk %}" class="btn btn-primary btn-sm flex-grow-1">
+            <i class="fas fa-eye me-1"></i>
+            View
+          </a>
+          <a href="{% url 'portfolio:update' portfolio.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-edit"></i>
+          </a>
+          <button class="btn btn-outline-danger btn-sm" onclick="showDeleteModal('{{ portfolio.pk }}', '{{ portfolio.name }}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="text-center py-5">
+  <div class="empty-state">
+    <div class="icon-circle mx-auto mb-4" style="background: var(--gray-2); width: 96px; height: 96px;">
+      <i class="fas fa-briefcase fa-3x" style="color: var(--gray-4);"></i>
+    </div>
+    <h4 class="fw-normal mb-2">No portfolios yet</h4>
+    <p class="text-secondary mb-4">Create your first portfolio to start tracking your investments</p>
+    <a href="{% url 'portfolio:create' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-plus me-2"></i>
+      Create Portfolio
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+          Delete Portfolio
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Are you sure you want to delete <strong id="deletePortfolioName"></strong>?</p>
+        <div class="alert alert-warning">
+          <i class="fas fa-info-circle me-2"></i>
+          This action cannot be undone. All holdings in this portfolio will be permanently deleted.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-2"></i>
+          Cancel
+        </button>
+        <form method="post" action="" id="deleteForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-2"></i>
+            Delete Portfolio
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showDeleteModal(portfolioId, portfolioName) {
+    document.getElementById('deletePortfolioName').textContent = portfolioName;
+    document.getElementById('deleteForm').action = `/portfolio/${portfolioId}/delete/`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+  }
+</script>
+
+<style>
+  .portfolio-card {
+    transition: var(--transition);
+    cursor: pointer;
+  }
+  
+  .portfolio-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .portfolio-card:hover .portfolio-icon .rounded-circle {
+    background: var(--primary) !important;
+  }
+  
+  .portfolio-card:hover .portfolio-icon i {
+    color: white !important;
+  }
+  
+  .stat-mini {
+    transition: var(--transition);
+  }
+  
+  .portfolio-card:hover .stat-mini {
+    background: white !important;
+  }
+  
+  .progress {
+    background: var(--gray-3);
+    border-radius: 100px;
+  }
+  
+  .progress-bar {
+    border-radius: 100px;
+  }
+  
+  .empty-state .icon-circle {
+    transition: var(--transition);
+  }
+  
+  .empty-state:hover .icon-circle {
+    background: var(--primary-light) !important;
+  }
+  
+  .empty-state:hover .icon-circle i {
+    color: var(--primary) !important;
+  }
+</style>
+{% endblock %}

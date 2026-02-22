@@ -1,0 +1,8 @@
+# Edit docker/crontab and make sure it has this EXACT format:
+# (Note: no spaces at line start, and a newline at end)
+
+0 * * * * root cd /app && python manage.py sync_google_sheets --direction both >> /app/logs/sheets_sync.log 2>&1
+*/15 * * * * root cd /app && python manage.py generate_invoices >> /app/logs/invoice_gen.log 2>&1
+0 2 * * * root cd /app && find /app/logs -name "*.log" -mtime +7 -delete
+
+# This empty line is required - DO NOT DELETE

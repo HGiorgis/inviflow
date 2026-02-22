@@ -1,0 +1,245 @@
+{% extends 'base.html' %} {% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <span class="web3-badge">
+        <i class="fas fa-briefcase"></i>
+        {% if object %}Edit Portfolio{% else %}New Portfolio{% endif %}
+      </span>
+    </div>
+    <h1 class="display-6 fw-bold mb-2">
+      {% if object %}Edit Portfolio{% else %}Create New Portfolio{% endif %}
+    </h1>
+    <p class="text-secondary">
+      {% if object %}Update your portfolio details{% else %}Create a new
+      portfolio to start investing{% endif %}
+    </p>
+  </div>
+  <a href="{% url 'portfolio:list' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>
+    Back to Portfolios
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-md-8 mx-auto">
+    <div class="card">
+      <div class="card-header">
+        <i
+          class="fas fa-{% if object %}edit{% else %}plus-circle{% endif %} me-2"
+          style="color: var(--primary)"
+        ></i>
+        Portfolio Information
+      </div>
+      <div class="card-body p-4">
+        <form method="post" id="portfolioForm">
+          {% csrf_token %}
+
+          <!-- Portfolio Name -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">
+              <i class="fas fa-tag me-2" style="color: var(--primary)"></i>
+              Portfolio Name
+            </label>
+            <div class="input-group">
+              <span class="input-group-text bg-transparent border-end-0">
+                <i class="fas fa-briefcase" style="color: var(--primary)"></i>
+              </span>
+              <input
+                type="text"
+                name="name"
+                class="form-control border-start-0"
+                value="{{ object.name|default:'' }}"
+                placeholder="e.g., Retirement Fund, Trading Account"
+                required
+              />
+            </div>
+            <small class="text-secondary mt-2 d-block">
+              <i class="fas fa-info-circle me-1"></i>
+              Choose a descriptive name for your portfolio
+            </small>
+          </div>
+
+          <!-- Description -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">
+              <i
+                class="fas fa-align-left me-2"
+                style="color: var(--primary)"
+              ></i>
+              Description (Optional)
+            </label>
+            <textarea
+              name="description"
+              class="form-control"
+              rows="4"
+              placeholder="Describe the purpose of this portfolio, your investment strategy, or any notes..."
+            >
+{{ object.description|default:'' }}</textarea
+            >
+          </div>
+
+          <!-- Preview Card -->
+          <div
+            class="preview-card p-4 rounded-3 mb-4"
+            style="background: var(--gray-1)"
+          >
+            <h6 class="fw-semibold mb-3">
+              <i class="fas fa-eye me-2" style="color: var(--primary)"></i>
+              Preview
+            </h6>
+            <div class="d-flex align-items-center gap-3">
+              <div class="preview-icon">
+                <div
+                  class="rounded-circle bg-primary-light d-flex align-items-center justify-content-center"
+                  style="width: 48px; height: 48px"
+                >
+                  <i class="fas fa-briefcase" style="color: var(--primary)"></i>
+                </div>
+              </div>
+              <div>
+                <h5 class="fw-bold mb-1" id="previewName">
+                  {{ object.name|default:"Portfolio Name" }}
+                </h5>
+                <p class="text-secondary mb-0" id="previewDescription">
+                  {{ object.description|default:'No description provided'}}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary px-4 py-2 flex-grow-1">
+              <i
+                class="fas fa-{% if object %}save{% else %}plus-circle{% endif %} me-2"
+              ></i>
+              {% if object %}Save Changes{% else %}Create Portfolio{% endif %}
+            </button>
+            <a
+              href="{% url 'portfolio:list' %}"
+              class="btn btn-outline-secondary px-4 py-2"
+            >
+              <i class="fas fa-times me-2"></i>
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tips Card -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <i class="fas fa-lightbulb me-2" style="color: var(--primary)"></i>
+        Portfolio Tips
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="text-center">
+              <i
+                class="fas fa-chart-pie fa-2x mb-2"
+                style="color: var(--primary)"
+              ></i>
+              <h6 class="fw-semibold mb-1">Diversify</h6>
+              <small class="text-secondary"
+                >Spread investments across different sectors</small
+              >
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center">
+              <i
+                class="fas fa-clock fa-2x mb-2"
+                style="color: var(--primary)"
+              ></i>
+              <h6 class="fw-semibold mb-1">Long-term</h6>
+              <small class="text-secondary"
+                >Think about your investment horizon</small
+              >
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center">
+              <i
+                class="fas fa-shield-alt fa-2x mb-2"
+                style="color: var(--primary)"
+              ></i>
+              <h6 class="fw-semibold mb-1">Risk Management</h6>
+              <small class="text-secondary">Consider your risk tolerance</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Live preview update
+  document
+    .querySelector('input[name="name"]')
+    .addEventListener("input", function () {
+      document.getElementById("previewName").textContent =
+        this.value || "Portfolio Name";
+    });
+
+  document
+    .querySelector('textarea[name="description"]')
+    .addEventListener("input", function () {
+      const desc = this.value || "No description provided";
+      document.getElementById("previewDescription").textContent =
+        desc.length > 50 ? desc.substring(0, 47) + "..." : desc;
+    });
+
+  // Form validation
+  document
+    .getElementById("portfolioForm")
+    .addEventListener("submit", function (e) {
+      const nameInput = document.querySelector('input[name="name"]');
+      if (!nameInput.value.trim()) {
+        e.preventDefault();
+        showToast("Please enter a portfolio name", "error");
+      }
+    });
+</script>
+
+<style>
+  .preview-card {
+    border: 1px solid var(--gray-3);
+    transition: var(--transition);
+  }
+
+  .preview-card:hover {
+    border-color: var(--primary);
+  }
+
+  .preview-icon {
+    transition: var(--transition);
+  }
+
+  .preview-card:hover .preview-icon .rounded-circle {
+    background: var(--primary) !important;
+  }
+
+  .preview-card:hover .preview-icon i {
+    color: white !important;
+  }
+
+  .input-group-text {
+    background: transparent;
+    border: 1px solid var(--gray-3);
+  }
+
+  .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.1);
+  }
+
+  textarea.form-control {
+    min-height: 120px;
+  }
+</style>
+{% endblock %}

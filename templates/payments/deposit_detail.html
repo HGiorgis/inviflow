@@ -1,0 +1,805 @@
+{% extends 'base.html' %} {% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <span class="web3-badge">
+        <i class="fas fa-money-bill-wave"></i>
+        Transaction Details
+      </span>
+      <span class="web3-badge">
+        <i class="fas fa-hashtag"></i>
+        ID: {{ deposit.transaction_id|truncatechars:12 }}
+      </span>
+    </div>
+    <h1 class="display-6 fw-bold mb-2">Deposit Details</h1>
+    <p class="text-secondary">View and manage your deposit transaction</p>
+  </div>
+  <a href="{% url 'payments:deposit_list' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>
+    Back to Deposits
+  </a>
+</div>
+
+<div class="row g-4">
+  <!-- Main Details Card -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-info-circle me-2" style="color: var(--primary)"></i>
+        Transaction Information
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-details mb-0">
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-hashtag text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Transaction ID
+                </th>
+                <td>
+                  <code
+                    class="transaction-code"
+                    onclick="copyToClipboard('{{ deposit.transaction_id }}')"
+                    style="cursor: pointer"
+                  >
+                    {{ deposit.transaction_id }}
+                    <i
+                      class="fas fa-copy ms-2"
+                      style="font-size: 0.8rem; opacity: 0.7"
+                    ></i>
+                  </code>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-file-invoice text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Invoice Number
+                </th>
+                <td>
+                  {% if deposit.invoice_number %}
+                  <span class="fw-semibold">{{ deposit.invoice_number }}</span>
+                  {% else %}
+                  <span class="text-secondary">Not assigned</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-calendar text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Date & Time
+                </th>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold"
+                      >{{ deposit.created_at|date:"F d, Y" }}</span
+                    >
+                    <small class="text-secondary"
+                      >{{ deposit.created_at|date:"H:i:s" }} UTC</small
+                    >
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-user text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  User
+                </th>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div
+                      class="user-avatar rounded-circle bg-primary-light d-flex align-items-center justify-content-center"
+                      style="width: 32px; height: 32px"
+                    >
+                      <i
+                        class="fas fa-user-circle"
+                        style="color: var(--primary)"
+                      ></i>
+                    </div>
+                    <div>
+                      <span class="fw-semibold d-block"
+                        >{{ deposit.user.get_full_name }}
+                      </span>
+                      <small class="text-secondary"
+                        >{{ deposit.user.email }}</small
+                      >
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-briefcase text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Portfolio
+                </th>
+                <td>
+                  <a
+                    href="{% url 'portfolio:detail' deposit.portfolio.pk %}"
+                    class="text-decoration-none"
+                  >
+                    <span class="fw-semibold"
+                      >{{ deposit.portfolio.name }}</span
+                    >
+                    <i
+                      class="fas fa-external-link-alt ms-2"
+                      style="font-size: 0.8rem"
+                    ></i>
+                  </a>
+                </td>
+              </tr>
+              {% if deposit.stock %}
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-chart-line text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Stock Allocation
+                </th>
+                <td>
+                  <a
+                    href="{% url 'core:stock_detail' deposit.stock.symbol %}"
+                    class="text-decoration-none"
+                  >
+                    <span class="badge badge-primary">
+                      <i class="fas fa-chart-line me-1"></i>
+                      {{ deposit.stock.symbol }} - {{ deposit.stock.name }}
+                    </span>
+                  </a>
+                </td>
+              </tr>
+              {% endif %}
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-dollar-sign text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Amount
+                </th>
+                <td>
+                  <span class="amount-display h3 fw-bold mb-0"
+                    >${{ deposit.amount|floatformat:2 }}</span
+                  >
+                  <small class="text-secondary ms-2">USD</small>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-credit-card text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Payment Method
+                </th>
+                <td>
+                  <span class="badge badge-secondary">
+                    <i
+                      class="fas fa-{% if deposit.payment_method == 'bank_transfer' %}university{% elif deposit.payment_method == 'credit_card' %}credit-card{% else %}wallet{% endif %} me-1"
+                    ></i>
+                    {{ deposit.get_payment_method_display }}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-check-circle text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Status
+                </th>
+                <td>
+                  <span class="badge text-black badge-{{ deposit.status }} p-2">
+                    <i
+                      class="fas fa-{% if deposit.status == 'completed' %}check-circle{% elif deposit.status == 'pending' %}clock{% else %}times-circle{% endif %} me-1"
+                    ></i>
+                    {{ deposit.get_status_display|upper }}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fab fa-google text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Google Sheets Sync
+                </th>
+                <td>
+                  {% if deposit.synced_to_sheets %}
+                  <span class="badge badge-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    Synced
+                  </span>
+                  {% else %}
+                  <span class="badge badge-warning">
+                    <i class="fas fa-clock me-1"></i>
+                    Pending Sync
+                  </span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if deposit.completed_at %}
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-calendar-check text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Completed At
+                </th>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold"
+                      >{{ deposit.completed_at|date:"F d, Y" }}</span
+                    >
+                    <small class="text-secondary"
+                      >{{ deposit.completed_at|date:"H:i:s" }} UTC</small
+                    >
+                  </div>
+                </td>
+              </tr>
+              {% endif %}
+              <tr>
+                <th scope="row">
+                  <i
+                    class="fas fa-sticky-note text-secondary me-2"
+                    style="width: 20px"
+                  ></i>
+                  Notes
+                </th>
+                <td>
+                  <div
+                    class="notes-box p-3 rounded-3"
+                    style="background: var(--gray-1)"
+                  >
+                    {% if deposit.notes %} {{ deposit.notes|linebreaks }} {%
+                    else %}
+                    <span class="text-secondary">No additional notes</span>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div class="col-md-4">
+    <!-- Invoice Card -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-file-invoice me-2" style="color: var(--primary)"></i>
+        Invoice
+      </div>
+      <div class="card-body text-center p-4">
+        {% if deposit.invoice_pdf %}
+        <div class="invoice-preview mb-3">
+          <i class="fas fa-file-pdf fa-4x text-danger mb-3"></i>
+          <h6 class="fw-semibold mb-1">Invoice Ready</h6>
+          <p class="text-secondary small mb-3">
+            Click below to download your invoice
+          </p>
+          <a
+            href="{% url 'payments:download_invoice' deposit.pk %}"
+            class="btn btn-success w-100"
+          >
+            <i class="fas fa-download me-2"></i>
+            Download Invoice
+          </a>
+        </div>
+        {% else %}
+        <div class="invoice-placeholder">
+          <div
+            class="icon-circle mx-auto mb-3"
+            style="background: var(--gray-2); width: 64px; height: 64px"
+          >
+            <i
+              class="fas fa-file-invoice fa-2x"
+              style="color: var(--gray-4)"
+            ></i>
+          </div>
+          <h6 class="fw-semibold mb-2">No Invoice Yet</h6>
+          <p class="text-secondary small mb-0">
+            {% if deposit.status == 'completed' %} Invoice will be generated
+            automatically {% else %} Invoice will be generated when deposit is
+            completed {% endif %}
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Timeline Card -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <i class="fas fa-clock me-2" style="color: var(--primary)"></i>
+        Transaction Timeline
+      </div>
+      <div class="card-body">
+        <div class="timeline">
+          <!-- Created Event -->
+          <div class="timeline-item d-flex gap-3 mb-3">
+            <div class="timeline-icon">
+              <div
+                class="rounded-circle p-2"
+                style="
+                  background: var(--primary-light);
+                  width: 32px;
+                  height: 32px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <i
+                  class="fas fa-plus"
+                  style="color: var(--primary); font-size: 0.8rem"
+                ></i>
+              </div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">Deposit Created</span>
+                <small class="text-secondary"
+                  >{{ deposit.created_at|timesince }} ago</small
+                >
+              </div>
+              <small class="text-secondary d-block"
+                >{{ deposit.created_at|date:"M d, Y H:i" }}</small
+              >
+            </div>
+          </div>
+
+          <!-- Processing Event (always show if not failed) -->
+          {% if deposit.status != 'failed' %}
+          <div class="timeline-item d-flex gap-3 mb-3">
+            <div class="timeline-icon">
+              <div
+                class="rounded-circle p-2"
+                style="
+                  background: rgba(255, 184, 0, 0.1);
+                  width: 32px;
+                  height: 32px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <i
+                  class="fas fa-sync-alt"
+                  style="color: var(--warning); font-size: 0.8rem"
+                ></i>
+              </div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">Processing Started</span>
+                <small class="text-secondary"
+                  >{{ deposit.created_at|timesince }} ago</small
+                >
+              </div>
+              <small class="text-secondary d-block"
+                >Payment verification in progress</small
+              >
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Completed Event -->
+          {% if deposit.completed_at %}
+          <div class="timeline-item d-flex gap-3 mb-3">
+            <div class="timeline-icon">
+              <div
+                class="rounded-circle p-2"
+                style="
+                  background: rgba(0, 211, 143, 0.1);
+                  width: 32px;
+                  height: 32px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <i
+                  class="fas fa-check"
+                  style="color: var(--success); font-size: 0.8rem"
+                ></i>
+              </div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">Completed</span>
+                <small class="text-secondary"
+                  >{{ deposit.completed_at|timesince }} ago</small
+                >
+              </div>
+              <small class="text-secondary d-block"
+                >{{ deposit.completed_at|date:"M d, Y H:i" }}</small
+              >
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Failed Event -->
+          {% if deposit.status == 'failed' %}
+          <div class="timeline-item d-flex gap-3 mb-3">
+            <div class="timeline-icon">
+              <div
+                class="rounded-circle p-2"
+                style="
+                  background: rgba(255, 59, 48, 0.1);
+                  width: 32px;
+                  height: 32px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <i
+                  class="fas fa-times"
+                  style="color: var(--danger); font-size: 0.8rem"
+                ></i>
+              </div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">Failed</span>
+                <small class="text-secondary"
+                  >{{ deposit.updated_at|timesince }} ago</small
+                >
+              </div>
+              <small class="text-secondary d-block">Transaction failed</small>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Sync Event -->
+          {% if deposit.synced_to_sheets %}
+          <div class="timeline-item d-flex gap-3">
+            <div class="timeline-icon">
+              <div
+                class="rounded-circle p-2"
+                style="
+                  background: rgba(0, 211, 143, 0.1);
+                  width: 32px;
+                  height: 32px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <i
+                  class="fab fa-google"
+                  style="color: var(--success); font-size: 0.8rem"
+                ></i>
+              </div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">Synced to Sheets</span>
+                <small class="text-secondary">Completed</small>
+              </div>
+              <small class="text-secondary d-block"
+                >Google Sheets synchronization</small
+              >
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Card -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <i class="fas fa-cog me-2" style="color: var(--primary)"></i>
+        Actions
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          {% if user.is_superuser %}
+          <form
+            method="post"
+            action="{% url 'payments:sync_to_sheets' deposit.pk %}"
+          >
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="btn btn-outline-primary w-100"
+              {%
+              if
+              deposit.synced_to_sheets
+              %}disabled{%
+              endif
+              %}
+            >
+              <i class="fab fa-google me-2"></i>
+              {% if deposit.synced_to_sheets %}Already Synced{% else %}Sync to
+              Google Sheets{% endif %}
+            </button>
+          </form>
+
+          <a
+            href="{% url 'admin:payments_deposit_change' deposit.pk %}"
+            class="btn btn-outline-warning w-100"
+          >
+            <i class="fas fa-edit me-2"></i>
+            Edit in Admin
+          </a>
+          {% endif %}
+
+          <a
+            href="{% url 'payments:deposit_create' %}"
+            class="btn btn-outline-success w-100"
+          >
+            <i class="fas fa-plus me-2"></i>
+            New Deposit
+          </a>
+
+          {% if deposit.status == 'pending' and user.is_superuser %}
+          <button
+            class="btn btn-outline-danger w-100"
+            onclick="cancelDeposit('{{ deposit.pk }}')"
+          >
+            <i class="fas fa-times me-2"></i>
+            Cancel Deposit
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Support Card -->
+    <div class="card mt-4">
+      <div class="card-body text-center p-4">
+        <i class="fas fa-headset fa-2x mb-3" style="color: var(--primary)"></i>
+        <h6 class="fw-semibold mb-2">Need Help?</h6>
+        <p class="text-secondary small mb-3">
+          Our support team is available 24/7 to assist you
+        </p>
+        <button
+          class="btn btn-outline-primary w-100"
+          onclick="showToast('Contact support feature coming soon', 'info')"
+        >
+          <i class="fas fa-envelope me-2"></i>
+          Contact Support
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Copy to clipboard function
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Transaction ID copied to clipboard!", "success");
+    });
+  }
+
+  // Cancel deposit function
+  function cancelDeposit(depositId) {
+    if (
+      confirm(
+        "Are you sure you want to cancel this deposit? This action cannot be undone.",
+      )
+    ) {
+      showToast("Cancelling deposit...", "info");
+      // In production, this would make an API call
+      setTimeout(() => {
+        showToast("Deposit cancelled successfully", "warning");
+      }, 1500);
+    }
+  }
+
+  // Format currency
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  }
+
+  // Print invoice
+  function printInvoice() {
+    window.print();
+  }
+</script>
+
+<style>
+  /* Deposit details specific styles */
+  .status-banner {
+    transition: var(--transition);
+  }
+
+  .status-banner:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .table-details th {
+    width: 200px;
+    background: var(--gray-1);
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--gray-3);
+    padding: 1rem;
+  }
+
+  .table-details td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-3);
+  }
+
+  .table-details tr:last-child th,
+  .table-details tr:last-child td {
+    border-bottom: none;
+  }
+
+  .transaction-code {
+    background: var(--gray-2);
+    color: var(--primary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border: 1px solid var(--gray-3);
+    transition: var(--transition);
+  }
+
+  .transaction-code:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+  }
+
+  .amount-display {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .user-avatar {
+    transition: var(--transition);
+  }
+
+  .user-avatar:hover {
+    transform: scale(1.1);
+  }
+
+  .notes-box {
+    border: 1px solid var(--gray-3);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .timeline-item {
+    position: relative;
+  }
+
+  .timeline-item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: -8px;
+    width: 2px;
+    background: var(--gray-3);
+  }
+
+  .timeline-icon {
+    position: relative;
+    z-index: 1;
+  }
+
+  .invoice-preview {
+    animation: fadeIn 0.3s ease;
+  }
+
+  .icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+  }
+
+  .icon-circle:hover {
+    transform: scale(1.1);
+    background: var(--primary-light) !important;
+  }
+
+  .icon-circle:hover i {
+    color: var(--primary) !important;
+  }
+
+  .badge-success,
+  .badge-warning,
+  .badge-danger,
+  .badge-primary,
+  .badge-secondary {
+    padding: 0.4rem 0.8rem;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  .badge-success {
+    background: rgba(0, 211, 143, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(0, 211, 143, 0.2);
+  }
+
+  .badge-warning {
+    background: rgba(255, 184, 0, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(255, 184, 0, 0.2);
+  }
+
+  .badge-danger {
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(255, 59, 48, 0.2);
+  }
+
+  .badge-primary {
+    background: rgba(0, 82, 255, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(0, 82, 255, 0.2);
+  }
+
+  .badge-secondary {
+    background: var(--gray-2);
+    color: var(--text-secondary);
+    border: 1px solid var(--gray-3);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .status-banner .d-flex {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .table-details th {
+      width: 120px;
+    }
+
+    .amount-display {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}

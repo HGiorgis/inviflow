@@ -1,0 +1,151 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: inviflow_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inviflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - inviflow_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: inviflow_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - inviflow_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inviflow_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+      - static_volume:/app/static
+      - invoices_volume:/app/invoices
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/inviflow
+      REDIS_URL: redis://redis:6379
+      DEBUG: "True"
+    env_file:
+      - .env
+    networks:
+      - inviflow_network
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inviflow_cron
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             cron && tail -f /app/logs/cron.log"
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+      - invoices_volume:/app/invoices
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/inviflow
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+    networks:
+      - inviflow_network
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inviflow_celery
+    restart: unless-stopped
+    command: celery -A inviflow worker --loglevel=info
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+      - invoices_volume:/app/invoices
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/inviflow
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+    networks:
+      - inviflow_network
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inviflow_celery_beat
+    restart: unless-stopped
+    command: celery -A inviflow beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      celery:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/inviflow
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+    networks:
+      - inviflow_network
+
+volumes:
+  postgres_data:
+  media_volume:
+  static_volume:
+  invoices_volume:
+
+networks:
+  inviflow_network:
+    driver: bridge

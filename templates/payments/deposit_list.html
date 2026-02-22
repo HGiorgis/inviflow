@@ -1,0 +1,512 @@
+{% extends 'base.html' %} {% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <span class="web3-badge">
+        <i class="fas fa-money-bill-wave"></i>
+        Transactions
+      </span>
+      <span class="web3-badge">
+        <i class="fas fa-circle text-success"></i>
+        {{ deposits|length }} Total
+      </span>
+    </div>
+    <h1 class="display-6 fw-bold mb-2">Deposits</h1>
+    <p class="text-secondary">Manage your deposits and transactions</p>
+  </div>
+  <a href="{% url 'payments:deposit_create' %}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>
+    New Deposit
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-3 align-items-center">
+      <div class="d-flex gap-2">
+        <button
+          class="filter-btn btn btn-sm btn-outline-primary active"
+          onclick="filterDeposits('all')"
+        >
+          All
+        </button>
+        <button
+          class="filter-btn btn btn-sm btn-outline-primary"
+          onclick="filterDeposits('completed')"
+        >
+          Completed
+        </button>
+        <button
+          class="filter-btn btn btn-sm btn-outline-primary"
+          onclick="filterDeposits('pending')"
+        >
+          Pending
+        </button>
+        <button
+          class="filter-btn btn btn-sm btn-outline-primary"
+          onclick="filterDeposits('failed')"
+        >
+          Failed
+        </button>
+      </div>
+
+      <div class="ms-auto d-flex gap-2">
+        <div class="input-group input-group-sm" style="width: 250px">
+          <span class="input-group-text bg-transparent border-end-0">
+            <i class="fas fa-search" style="color: var(--primary)"></i>
+          </span>
+          <input
+            type="text"
+            class="form-control border-start-0"
+            id="depositSearch"
+            placeholder="Search deposits..."
+            onkeyup="filterDepositsTable()"
+          />
+        </div>
+
+        <button
+          class="btn btn-sm btn-outline-secondary"
+          onclick="exportDeposits()"
+        >
+          <i class="fas fa-download me-1"></i>
+          Export
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Deposits Table -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="depositsTable">
+        <thead class="bg-light">
+          <tr>
+            <th>Transaction ID</th>
+            <th>Date</th>
+            {% if user.is_superuser %}
+            <th>User</th>
+            {% endif %}
+            <th>Portfolio</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for deposit in deposits %}
+          <tr
+            class="deposit-row"
+            data-status="{{ deposit.status }}"
+            data-search="{{ deposit.transaction_id }} {{ deposit.portfolio.name }} {{ deposit.stock.symbol }}"
+          >
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <i
+                  class="fas fa-hashtag text-secondary"
+                  style="font-size: 0.8rem"
+                ></i>
+                <code
+                  class="transaction-id"
+                  onclick="copyToClipboard('{{ deposit.transaction_id }}')"
+                  style="cursor: pointer"
+                >
+                  {{ deposit.transaction_id|truncatechars:12 }}
+                </code>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex flex-column">
+                <span class="fw-semibold"
+                  >{{ deposit.created_at|date:"M d, Y" }}</span
+                >
+                <small class="text-secondary"
+                  >{{ deposit.created_at|date:"H:i" }}</small
+                >
+              </div>
+            </td>
+            {% if user.is_superuser %}
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div
+                  class="user-avatar rounded-circle bg-primary-light d-flex align-items-center justify-content-center"
+                  style="width: 32px; height: 32px"
+                >
+                  <i
+                    class="fas fa-user-circle"
+                    style="color: var(--primary)"
+                  ></i>
+                </div>
+                <span>{{ deposit.user.email|truncatechars:20 }}</span>
+              </div>
+            </td>
+            {% endif %}
+            <td>
+              <span class="fw-semibold">{{ deposit.portfolio.name }}</span>
+            </td>
+            <td>
+              <span class="fw-bold amount"
+                >${{ deposit.amount|floatformat:2 }}</span
+              >
+            </td>
+            <td>
+              <span class="badge badge-secondary">
+                <i
+                  class="fas fa-{% if deposit.payment_method == 'card' %}credit-card{% elif deposit.payment_method == 'bank' %}university{% else %}wallet{% endif %} me-1"
+                ></i>
+                {{ deposit.get_payment_method_display }}
+              </span>
+            </td>
+            <td>
+              {% if deposit.status == 'completed' %}
+              <span class="badge badge-success">
+                <i class="fas fa-check-circle me-1"></i>
+                Completed
+              </span>
+              {% elif deposit.status == 'pending' %}
+              <span class="badge badge-warning">
+                <i class="fas fa-clock me-1"></i>
+                Pending
+              </span>
+              {% elif deposit.status == 'processing' %}
+              <span class="badge badge-primary">
+                <i class="fas fa-sync-alt fa-spin me-1"></i>
+                Processing
+              </span>
+              {% else %}
+              <span class="badge badge-danger">
+                <i class="fas fa-times-circle me-1"></i>
+                Failed
+              </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if deposit.stock %}
+              <a
+                href="{% url 'core:stock_detail' deposit.stock.symbol %}"
+                class="text-decoration-none"
+              >
+                <span class="badge badge-primary">
+                  <i class="fas fa-chart-line me-1"></i>
+                  {{ deposit.stock.symbol }}
+                </span>
+              </a>
+              {% else %}
+              <span class="text-secondary">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="btn-group">
+                <a
+                  href="{% url 'payments:deposit_detail' deposit.pk %}"
+                  class="btn btn-sm btn-outline-primary"
+                  title="View Details"
+                >
+                  <i class="fas fa-eye"></i>
+                </a>
+                {% if deposit.invoice_pdf %}
+                <a
+                  href="{% url 'payments:download_invoice' deposit.pk %}"
+                  class="btn btn-sm btn-outline-success"
+                  title="Download Invoice"
+                >
+                  <i class="fas fa-download"></i>
+                </a>
+                {% endif %} {% if deposit.status == 'pending' %}
+                <button
+                  class="btn btn-sm btn-outline-warning"
+                  onclick="cancelDeposit('{{ deposit.pk }}')"
+                  title="Cancel Deposit"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td
+              colspan="{% if user.is_superuser %}9{% else %}8{% endif %}"
+              class="text-center py-5"
+            >
+              <div class="empty-state">
+                <i
+                  class="fas fa-money-bill-wave fa-4x mb-3"
+                  style="color: var(--gray-4)"
+                ></i>
+                <h6 class="fw-normal mb-2">No deposits found</h6>
+                <p class="text-secondary small mb-3">
+                  Get started by making your first deposit
+                </p>
+                <a
+                  href="{% url 'payments:deposit_create' %}"
+                  class="btn btn-primary btn-sm"
+                >
+                  <i class="fas fa-plus me-2"></i>
+                  New Deposit
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if is_paginated %}
+  <div
+    class="card-footer bg-white d-flex justify-content-between align-items-center"
+  >
+    <div class="text-secondary small">
+      Showing <span class="fw-semibold">{{ page_obj.start_index }}</span> to
+      <span class="fw-semibold">{{ page_obj.end_index }}</span> of
+      <span class="fw-semibold">{{ page_obj.paginator.count }}</span> deposits
+    </div>
+
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="?page={{ page_obj.previous_page_number }}"
+            aria-label="Previous"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">&laquo;</span>
+        </li>
+        {% endif %} {% if page_obj.has_next %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="?page={{ page_obj.next_page_number }}"
+            aria-label="Next"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">&raquo;</span>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  // Filter deposits by status
+  function filterDeposits(status) {
+    const rows = document.querySelectorAll(".deposit-row");
+    let visibleCount = 0;
+
+    // Update active button
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.classList.remove("active");
+    });
+    event.target.classList.add("active");
+
+    rows.forEach((row) => {
+      if (status === "all" || row.dataset.status === status) {
+        row.style.display = "";
+        visibleCount++;
+      } else {
+        row.style.display = "none";
+      }
+    });
+
+    // Update visible count if needed
+    const countElement = document.getElementById("visibleCount");
+    if (countElement) {
+      countElement.textContent = visibleCount;
+    }
+  }
+
+  // Search deposits
+  function filterDepositsTable() {
+    const searchInput = document
+      .getElementById("depositSearch")
+      .value.toLowerCase();
+    const rows = document.querySelectorAll(".deposit-row");
+    let visibleCount = 0;
+
+    rows.forEach((row) => {
+      const searchText = row.dataset.search.toLowerCase();
+      if (searchText.includes(searchInput)) {
+        row.style.display = "";
+        visibleCount++;
+      } else {
+        row.style.display = "none";
+      }
+    });
+  }
+
+  // Export deposits
+  function exportDeposits() {
+    showToast("Exporting deposits...", "info");
+    setTimeout(() => {
+      // In production, this would trigger a download
+      showToast("Deposits exported successfully!", "success");
+    }, 1500);
+  }
+
+  // Cancel deposit
+  function cancelDeposit(depositId) {
+    if (confirm("Are you sure you want to cancel this deposit?")) {
+      showToast("Deposit cancelled", "warning");
+      // In production, this would make an API call
+    }
+  }
+
+  // Copy transaction ID
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Transaction ID copied!", "success");
+    });
+  }
+
+  // Format currency
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  }
+</script>
+
+<style>
+  /* Deposits page specific styles */
+  .deposit-row {
+    transition: var(--transition);
+  }
+
+  .deposit-row:hover {
+    background: var(--gray-1) !important;
+  }
+
+  .transaction-id {
+    background: var(--gray-2);
+    color: var(--primary);
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    border: 1px solid var(--gray-3);
+    transition: var(--transition);
+  }
+
+  .transaction-id:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+  }
+
+  .amount {
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .filter-btn {
+    border-radius: 100px;
+    padding: 0.4rem 1.2rem;
+    font-weight: 500;
+  }
+
+  .filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
+  .filter-btn:hover:not(.active) {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .activity-item {
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .activity-item:hover {
+    background: var(--gray-1);
+    padding-left: 1.5rem !important;
+  }
+
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+  }
+
+  .badge-success,
+  .badge-warning,
+  .badge-danger,
+  .badge-primary {
+    padding: 0.4rem 0.8rem;
+    border-radius: 100px;
+    font-weight: 500;
+    font-size: 0.75rem;
+  }
+
+  .page-link {
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0 2px;
+    border-radius: 8px !important;
+  }
+
+  .page-link:hover {
+    background: var(--gray-1);
+    color: var(--primary);
+  }
+
+  .page-item.active .page-link {
+    background: var(--primary);
+    color: white;
+  }
+
+  .user-avatar {
+    transition: var(--transition);
+  }
+
+  .user-avatar:hover {
+    transform: scale(1.1);
+  }
+
+  .border-top {
+    border-top-color: var(--gray-3) !important;
+  }
+
+  .border-bottom {
+    border-bottom-color: var(--gray-3) !important;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .stat-card {
+      margin-bottom: 1rem;
+    }
+
+    .btn-group {
+      flex-direction: column;
+    }
+
+    .btn-group .btn {
+      margin: 2px 0;
+    }
+  }
+</style>
+{% endblock %}

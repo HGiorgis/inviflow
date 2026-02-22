@@ -1,0 +1,410 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Welcome to
+InviFlow{% endblock %} {% block content_unauth %}
+<!-- Hero Section -->
+<div class="container px-4 py-6">
+  <div class="row align-items-center min-vh-100">
+    <div class="col-lg-6">
+      <div class="d-flex gap-2 mb-4">
+        <span class="web3-badge">
+          <i class="fas fa-bolt"></i>
+          Sync Fast
+        </span>
+        <span class="web3-badge">
+          <i class="fas fa-shield"></i>
+          Secure
+        </span>
+        <span class="web3-badge">
+          <i class="fas fa-link"></i>
+          Google Sheets Linked
+        </span>
+      </div>
+
+      <h1 class="display-3 fw-bold mb-4" style="line-height: 1.2">
+        Investment Portfolio
+        <span class="gradient-text">Management</span>
+        Reimagined
+      </h1>
+
+      <p class="lead mb-5 text-secondary" style="font-size: 1.3rem">
+        Track your investments, generate invoices, and sync with Google Sheets.
+        All in one beautiful platform.
+      </p>
+
+      <div class="d-flex gap-3 mb-5">
+        <a href="{% url 'register' %}" class="btn btn-primary btn-lg px-5 py-3">
+          <i class="fas fa-rocket me-2"></i>
+          Get Started
+        </a>
+        <a href="#features" class="btn btn-outline-primary btn-lg px-5 py-3">
+          <i class="fas fa-play me-2"></i>
+          Watch Demo
+        </a>
+      </div>
+
+      <div class="d-flex gap-4">
+        <div>
+          <div class="h3 fw-bold mb-0">{{ total_users|default:"10k+" }}</div>
+          <div class="text-secondary">Active Users</div>
+        </div>
+        <div>
+          <div class="h3 fw-bold mb-0">
+            {{ total_deposits|default:"$50M+" }}
+          </div>
+          <div class="text-secondary">Total Volume</div>
+        </div>
+        <div>
+          <div class="h3 fw-bold mb-0">{{ total_stocks|default:"500+" }}</div>
+          <div class="text-secondary">Stocks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="position-relative">
+        <!-- Dashboard Preview -->
+        <div class="card shadow-lg border-0">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h5 class="mb-0">Portfolio Overview</h5>
+              <span class="web3-badge">
+                <i class="fas fa-circle text-success"></i>
+                Live
+              </span>
+            </div>
+
+            <div class="mb-4">
+              <canvas id="previewChart" height="200"></canvas>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="p-3 rounded-3" style="background: var(--gray-1)">
+                  <small class="text-secondary">Total Value</small>
+                  <div class="h5 mb-0 gradient-text">$124,500</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded-3" style="background: var(--gray-1)">
+                  <small class="text-secondary">Daily Change</small>
+                  <div class="h5 mb-0 text-success">+2.4%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Elements -->
+        <div class="position-absolute top-0 end-0 translate-middle-y">
+          <div class="card p-3 shadow" style="transform: rotate(5deg)">
+            <i
+              class="fas fa-file-invoice fa-2x"
+              style="color: var(--primary)"
+            ></i>
+          </div>
+        </div>
+
+        <div class="position-absolute bottom-0 start-0 translate-middle">
+          <div class="card p-3 shadow" style="transform: rotate(-5deg)">
+            <i
+              class="fas fa-chart-line fa-2x"
+              style="color: var(--success)"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div id="features" class="container py-6">
+  <div class="text-center mb-5">
+    <span class="web3-badge mb-3">
+      <i class="fas fa-cube"></i>
+      Features
+    </span>
+    <h2 class="display-5 fw-bold mb-3">Everything you need to succeed</h2>
+    <p class="lead text-secondary mx-auto" style="max-width: 600px">
+      Powerful features to manage your investments efficiently
+    </p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="feature-icon mb-4">
+            <i class="fas fa-briefcase fa-2x" style="color: var(--primary)"></i>
+          </div>
+          <h4 class="fw-semibold mb-3">Portfolio Management</h4>
+          <p class="text-secondary mb-0">
+            Track multiple portfolios with real-time updates and detailed
+            analytics.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="feature-icon mb-4">
+            <i
+              class="fas fa-file-invoice-dollar fa-2x"
+              style="color: var(--secondary)"
+            ></i>
+          </div>
+          <h4 class="fw-semibold mb-3">Auto Invoicing</h4>
+          <p class="text-secondary mb-0">
+            Generate professional PDF invoices automatically for every deposit.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="feature-icon mb-4">
+            <i
+              class="fas fa-google-sheets fa-2x"
+              style="color: var(--accent)"
+            ></i>
+          </div>
+          <h4 class="fw-semibold mb-3">Google Sheets Sync</h4>
+          <p class="text-secondary mb-0">
+            Automatic synchronization with Google Sheets for easy reporting.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top Stocks Section -->
+<div class="container py-6">
+  <div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+      <span class="web3-badge mb-3">
+        <i class="fas fa-chart-bar"></i>
+        Market Data
+      </span>
+      <h2 class="display-6 fw-bold">Top Stocks</h2>
+    </div>
+    <a href="{% url 'core:stock_list' %}" class="btn btn-outline-primary">
+      View All <i class="fas fa-arrow-right ms-2"></i>
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>24h Change</th>
+            <th>Volume</th>
+            <th>Market Cap</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in top_stocks %}
+          <tr>
+            <td>
+              <strong class="text-primary">{{ stock.symbol }}</strong>
+            </td>
+            <td>{{ stock.name }}</td>
+            <td class="fw-semibold">
+              ${{ stock.current_price|floatformat:2 }}
+            </td>
+            <td>
+              <span
+                class="badge {% if stock.change_percent > 0 %}badge-success{% else %}badge-danger{% endif %}"
+              >
+                <i
+                  class="fas fa-{% if stock.change_percent > 0 %}arrow-up{% else %}arrow-down{% endif %} me-1"
+                ></i>
+                {{ stock.change_percent|floatformat:2 }}%
+              </span>
+            </td>
+            <td class="text-secondary">{{ stock.volume|default:"-" }}</td>
+            <td class="text-secondary">
+              ${{ stock.market_cap|default:"-"|floatformat:0 }}
+            </td>
+            <td>
+              <button
+                class="btn btn-sm btn-outline-primary"
+                onclick="showStockDetails('{{ stock.symbol }}')"
+              >
+                <i class="fas fa-chart-line"></i>
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5">
+              <i class="fas fa-chart-line fa-3x mb-3 text-secondary"></i>
+              <p class="text-secondary">No stock data available</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CTA Section -->
+<div class="container py-6">
+  <div
+    class="card cta-card border-0"
+    style="
+      background: linear-gradient(
+        135deg,
+        var(--primary) 0%,
+        var(--secondary) 100%
+      );
+    "
+  >
+    <div class="card-body text-center py-6">
+      <h2 class="display-6 fw-bold text-white mb-4">Ready to get started?</h2>
+      <p class="lead text-white-50 mb-5 mx-auto" style="max-width: 600px">
+        Join thousands of investors managing their portfolios with InviFlow
+      </p>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Home page specific styles */
+  .py-6 {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+
+  .feature-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-light);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cta-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-card::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 70%
+    );
+    animation: rotate 6s linear infinite;
+  }
+
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .min-vh-100 {
+    min-height: 100vh;
+  }
+
+  @media (max-width: 768px) {
+    .display-3 {
+      font-size: 2.5rem;
+    }
+
+    .py-6 {
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+  }
+</style>
+
+{% block extra_js %}
+<script>
+  // Preview chart
+  const previewCtx = document.getElementById("previewChart").getContext("2d");
+  new Chart(previewCtx, {
+    type: "line",
+    data: {
+      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+      datasets: [
+        {
+          data: [30, 45, 35, 50, 45, 60],
+          borderColor: "var(--primary)",
+          backgroundColor: "rgba(0, 82, 255, 0.05)",
+          tension: 0.4,
+          fill: true,
+          pointRadius: 0,
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false },
+      },
+      scales: {
+        x: { display: false },
+        y: { display: false },
+      },
+    },
+  });
+
+  // Stock details function
+  function showStockDetails(symbol) {
+    showToast(`Loading ${symbol} details...`, "info");
+  }
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute("href"));
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  });
+
+  // Animate stats on scroll
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("animate");
+        }
+      });
+    },
+    { threshold: 0.5 },
+  );
+
+  document.querySelectorAll(".stat-value").forEach((el) => {
+    observer.observe(el);
+  });
+</script>
+{% endblock %} {% endblock %}

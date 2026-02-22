@@ -1,0 +1,878 @@
+{% extends 'base.html' %} {% load static %} {% block title %}{{ stock.symbol }}
+- {{ stock.name }}{% endblock %} {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %} {% block content %}
+<!-- Page Header -->
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <span class="web3-badge">
+        <i class="fas fa-chart-line"></i>
+        Stock Details
+      </span>
+      <span class="web3-badge">
+        <i class="fas fa-circle text-success"></i>
+        Market Open
+      </span>
+      {% if stock.sector %}
+      <span class="web3-badge">
+        <i class="fas fa-tag"></i>
+        {{ stock.sector }}
+      </span>
+      {% endif %}
+    </div>
+    <h1 class="display-6 fw-bold mb-2">
+      {{ stock.symbol }}
+      <small class="text-secondary fs-4">{{ stock.name }}</small>
+    </h1>
+  </div>
+  <a href="{% url 'core:stock_list' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>
+    Back to Stocks
+  </a>
+</div>
+
+<!-- Stock Stats Cards -->
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="stat-label">Current Price</span>
+          <div class="stat-value">${{ stock.current_price|floatformat:2 }}</div>
+        </div>
+        <div class="stat-icon">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+      </div>
+      <div class="stat-footer mt-3 pt-3 border-top">
+        <small class="text-secondary">
+          <i class="fas fa-clock me-1"></i>
+          Last updated: {{ stock.last_updated|default:"now"|timesince }} ago
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="stat-label">Previous Close</span>
+          <div class="stat-value">
+            ${{ stock.previous_close|default:"0"|floatformat:2 }}
+          </div>
+        </div>
+        <div
+          class="stat-icon"
+          style="background: rgba(0, 211, 143, 0.1); color: var(--success)"
+        >
+          <i class="fas fa-history"></i>
+        </div>
+      </div>
+      <div class="stat-footer mt-3 pt-3 border-top">
+        <small class="text-secondary">
+          <i class="fas fa-calendar me-1"></i>
+          Yesterday's close
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="stat-label">24h Change</span>
+          {% with change=stock.change_percent|default:0 %}
+          <div
+            class="stat-value {% if change > 0 %}text-success{% else %}text-danger{% endif %}"
+          >
+            {{ change|floatformat:2 }}%
+          </div>
+          {% endwith %}
+        </div>
+        <div
+          class="stat-icon"
+          style="background: {% if stock.change_percent > 0 %}rgba(0, 211, 143, 0.1){% else %}rgba(255, 59, 48, 0.1){% endif %}; 
+                                         color: {% if stock.change_percent > 0 %}var(--success){% else %}var(--danger){% endif %};"
+        >
+          <i
+            class="fas fa-{% if stock.change_percent > 0 %}arrow-up{% else %}arrow-down{% endif %}"
+          ></i>
+        </div>
+      </div>
+      <div class="stat-footer mt-3 pt-3 border-top">
+        <small class="text-secondary">
+          <i class="fas fa-chart-line me-1"></i>
+          {% with change=stock.change_amount|default:0 %}
+          <span
+            class="{% if change > 0 %}text-success{% else %}text-danger{% endif %}"
+          >
+            ${{ change|floatformat:2 }}
+          </span>
+          {% endwith %}
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="stat-label">Volume</span>
+          <div class="stat-value">
+            {{ stock.volume|default:"0"|floatformat:0 }}
+          </div>
+        </div>
+        <div
+          class="stat-icon"
+          style="background: rgba(255, 184, 0, 0.1); color: var(--warning)"
+        >
+          <i class="fas fa-chart-bar"></i>
+        </div>
+      </div>
+      <div class="stat-footer mt-3 pt-3 border-top">
+        <small class="text-secondary">
+          <i class="fas fa-chart-pie me-1"></i>
+          Avg: {{ stock.avg_volume|default:"-"|floatformat:0 }}
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Stats Row -->
+<div class="row g-4 mb-4">
+  <div class="col-md-2">
+    <div class="card">
+      <div class="card-body p-3 text-center">
+        <small class="text-secondary d-block">Day Range</small>
+        <span class="fw-semibold"
+          >${{ stock.day_low|default:"0"|floatformat:2 }}</span
+        >
+        -
+        <span class="fw-semibold"
+          >${{ stock.day_high|default:"0"|floatformat:2 }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card">
+      <div class="card-body p-3 text-center">
+        <small class="text-secondary d-block">52W Range</small>
+        <span class="fw-semibold"
+          >${{ stock.year_low|default:"0"|floatformat:2 }}</span
+        >
+        -
+        <span class="fw-semibold"
+          >${{ stock.year_high|default:"0"|floatformat:2 }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card">
+      <div class="card-body p-3 text-center">
+        <small class="text-secondary d-block">Market Cap</small>
+        <span class="fw-semibold"
+          >${{ stock.market_cap|default:"0"|floatformat:0 }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card">
+      <div class="card-body p-3 text-center">
+        <small class="text-secondary d-block">P/E Ratio</small>
+        <span class="fw-semibold">{{ stock.pe_ratio|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card">
+      <div class="card-body p-3 text-center">
+        <small class="text-secondary d-block">EPS</small>
+        <span class="fw-semibold"
+          >${{ stock.eps|default:"0"|floatformat:2 }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="card">
+      <div class="card-body p-3 text-center">
+        <small class="text-secondary d-block">Dividend</small>
+        <span class="fw-semibold"
+          >{{ stock.dividend_yield|default:"0"|floatformat:2 }}%</span
+        >
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Price Chart -->
+  <div class="col-md-8">
+    <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <span>
+          <i class="fas fa-chart-line me-2" style="color: var(--primary)"></i>
+          Price History
+        </span>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-secondary" onclick="updateChart('1D')">
+            1D
+          </button>
+          <button
+            class="btn btn-outline-secondary active"
+            onclick="updateChart('1W')"
+          >
+            1W
+          </button>
+          <button class="btn btn-outline-secondary" onclick="updateChart('1M')">
+            1M
+          </button>
+          <button class="btn btn-outline-secondary" onclick="updateChart('3M')">
+            3M
+          </button>
+          <button class="btn btn-outline-secondary" onclick="updateChart('1Y')">
+            1Y
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="priceChart" style="height: 350px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-bolt me-2" style="color: var(--primary)"></i>
+        Trade {{ stock.symbol }}
+      </div>
+      <div class="card-body">
+        {% if user.is_authenticated %}
+        <!-- Price Summary -->
+        <div
+          class="price-summary mb-4 p-3 rounded-3"
+          style="background: var(--gray-1)"
+        >
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <small class="text-secondary d-block">Current Price</small>
+              <span class="h4 fw-bold mb-0"
+                >${{ stock.current_price|floatformat:2 }}</span
+              >
+            </div>
+            <div class="text-end">
+              <small class="text-secondary d-block">Today's Change</small>
+              <span
+                class="h5 mb-0 {% if stock.change_percent > 0 %}text-success{% else %}text-danger{% endif %}"
+              >
+                <i
+                  class="fas fa-arrow-{% if stock.change_percent > 0 %}up{% else %}down{% endif %} me-1"
+                ></i>
+                {{ stock.change_percent|default:"0"|floatformat:2 }}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buy Form -->
+        {% if portfolios %}
+        <form
+          method="post"
+          action="{% url 'portfolio:add_holding' portfolios.0.pk %}"
+          id="buyForm"
+        >
+          {% csrf_token %}
+          <input type="hidden" name="stock_id" value="{{ stock.id }}" />
+          <input type="hidden" name="price" value="{{ stock.current_price }}" />
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Select Portfolio</label>
+            <select name="portfolio_id" class="form-select" required>
+              {% for portfolio in portfolios %}
+              <option value="{{ portfolio.pk }}">{{ portfolio.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Quantity</label>
+            <div class="input-group">
+              <input
+                type="number"
+                name="quantity"
+                id="quantity"
+                step="0.01"
+                min="0.01"
+                class="form-control"
+                placeholder="0.00"
+                required
+              />
+              <span class="input-group-text">shares</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Total Cost</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input
+                type="text"
+                class="form-control"
+                id="totalCost"
+                value="0.00"
+                readonly
+              />
+            </div>
+            <small class="text-secondary" id="feeNote"></small>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2 mb-2">
+            <i class="fas fa-shopping-cart me-2"></i>
+            Buy {{ stock.symbol }}
+          </button>
+        </form>
+        {% else %}
+        <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div>
+            <strong>No portfolios found</strong>
+            <p class="mb-0 small">Create a portfolio first to start trading.</p>
+          </div>
+        </div>
+        <a href="{% url 'portfolio:create' %}" class="btn btn-primary w-100">
+          <i class="fas fa-plus me-2"></i>
+          Create Portfolio
+        </a>
+        {% endif %}
+
+        <hr class="my-4" />
+
+        <!-- Additional Actions -->
+        <div class="d-grid gap-2">
+          <a
+            href="{% url 'payments:deposit_create' %}?stock={{ stock.id }}"
+            class="btn btn-outline-success"
+          >
+            <i class="fas fa-coins me-2"></i>
+            Deposit for {{ stock.symbol }}
+          </a>
+          <button
+            class="btn btn-outline-secondary"
+            onclick="addToWatchlist('{{ stock.symbol }}')"
+          >
+            <i class="fas fa-star me-2"></i>
+            Add to Watchlist
+          </button>
+          <button class="btn btn-outline-info" onclick="showCompanyInfo()">
+            <i class="fas fa-info-circle me-2"></i>
+            Company Info
+          </button>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <i class="fas fa-lock fa-3x mb-3" style="color: var(--gray-4)"></i>
+          <h6 class="fw-normal mb-2">Login Required</h6>
+          <p class="text-secondary small mb-3">
+            Please login to trade {{ stock.symbol }}
+          </p>
+          <a
+            href="{% url 'login' %}?next={{ request.path }}"
+            class="btn btn-primary w-100"
+          >
+            <i class="fas fa-sign-in-alt me-2"></i>
+            Login
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Holdings -->
+{% if user_holdings %}
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <span>
+          <i class="fas fa-chart-pie me-2" style="color: var(--primary)"></i>
+          Your {{ stock.symbol }} Holdings
+        </span>
+        <span class="web3-badge">
+          <i class="fas fa-chart-line"></i>
+          {{ user_holdings|length }}
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th>Portfolio</th>
+                <th>Quantity</th>
+                <th>Avg Buy Price</th>
+                <th>Current Value</th>
+                <th>Profit/Loss</th>
+                <th>Return %</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for holding in user_holdings %}
+              <tr class="holding-row">
+                <td>
+                  <span class="fw-semibold">{{ holding.portfolio.name }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-secondary"
+                    >{{ holding.quantity|floatformat:4 }}</span
+                  >
+                </td>
+                <td>
+                  <span class="fw-semibold"
+                    >${{ holding.average_buy_price|floatformat:2 }}</span
+                  >
+                </td>
+                <td>
+                  <span class="fw-bold amount"
+                    >${{ holding.current_value|floatformat:2 }}</span
+                  >
+                </td>
+                <td>
+                  <span
+                    class="{% if holding.profit_loss > 0 %}text-success{% else %}text-danger{% endif %}"
+                  >
+                    <i
+                      class="fas fa-arrow-{% if holding.profit_loss > 0 %}up{% else %}down{% endif %} me-1"
+                    ></i>
+                    ${{ holding.profit_loss|floatformat:2 }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="badge {% if holding.profit_loss_percent > 0 %}badge-success{% else %}badge-danger{% endif %}"
+                  >
+                    {{ holding.profit_loss_percent|floatformat:1 }}%
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group">
+                    <a
+                      href="{% url 'portfolio:update_holding' holding.pk %}"
+                      class="btn btn-sm btn-outline-primary"
+                      title="Edit"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a
+                      href="{% url 'portfolio:delete_holding' holding.pk %}"
+                      class="btn btn-sm btn-outline-danger"
+                      title="Delete"
+                      onclick="
+                        return confirm(
+                          'Are you sure you want to delete this holding?',
+                        );
+                      "
+                    >
+                      <i class="fas fa-trash"></i>
+                    </a>
+                    <button
+                      class="btn btn-sm btn-outline-success"
+                      onclick="addMore('{{ holding.pk }}')"
+                      title="Add More"
+                    >
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Similar Stocks -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-layer-group me-2" style="color: var(--primary)"></i>
+        Similar Stocks
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for similar in similar_stocks|default:""|slice:":4" %}
+          <div class="col-md-3">
+            <a
+              href="{% url 'core:stock_detail' similar.symbol %}"
+              class="text-decoration-none"
+            >
+              <div
+                class="similar-stock-card p-3 rounded-3"
+                style="background: var(--gray-1)"
+              >
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <span class="fw-semibold">{{ similar.symbol }}</span>
+                  <span
+                    class="badge {% if similar.change_percent > 0 %}badge-success{% else %}badge-danger{% endif %}"
+                  >
+                    {{ similar.change_percent|default:"0"|floatformat:1 }}%
+                  </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-end">
+                  <div>
+                    <small class="text-secondary d-block">Price</small>
+                    <span class="fw-semibold"
+                      >${{ similar.current_price|floatformat:2 }}</span
+                    >
+                  </div>
+                  <i class="fas fa-chevron-right text-primary"></i>
+                </div>
+              </div>
+            </a>
+          </div>
+          {% empty %}
+          <div class="col-12 text-center py-3">
+            <p class="text-secondary mb-0">No similar stocks available</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Company Info Modal -->
+<div class="modal fade" id="companyInfoModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-building me-2" style="color: var(--primary)"></i>
+          {{ stock.symbol }} - Company Information
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p class="lead">
+          {{ stock.description|default:"No company description available." }}
+        </p>
+
+        <div class="row g-3 mt-3">
+          <div class="col-md-4">
+            <div class="p-3 rounded-3" style="background: var(--gray-1)">
+              <small class="text-secondary d-block">Sector</small>
+              <span class="fw-semibold">{{ stock.sector|default:"N/A" }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 rounded-3" style="background: var(--gray-1)">
+              <small class="text-secondary d-block">Industry</small>
+              <span class="fw-semibold"
+                >{{ stock.industry|default:"N/A" }}</span
+              >
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 rounded-3" style="background: var(--gray-1)">
+              <small class="text-secondary d-block">Headquarters</small>
+              <span class="fw-semibold"
+                >{{ stock.headquarters|default:"N/A" }}</span
+              >
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background: var(--gray-1)">
+              <small class="text-secondary d-block">CEO</small>
+              <span class="fw-semibold">{{ stock.ceo|default:"N/A" }}</span>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background: var(--gray-1)">
+              <small class="text-secondary d-block">Employees</small>
+              <span class="fw-semibold"
+                >{{ stock.employees|default:"N/A" }}</span
+              >
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background: var(--gray-1)">
+              <small class="text-secondary d-block">Founded</small>
+              <span class="fw-semibold">{{ stock.founded|default:"N/A" }}</span>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 rounded-3" style="background: var(--gray-1)">
+              <small class="text-secondary d-block">Website</small>
+              {% if stock.website %}
+              <a href="{{ stock.website }}" target="_blank" class="text-primary"
+                >Visit</a
+              >
+              {% else %}
+              <span class="fw-semibold">N/A</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize chart
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const labels = {{ chart_labels|safe }};
+    const prices = {{ chart_prices|safe }};
+
+    window.priceChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '{{ stock.symbol }} Price',
+          data: prices,
+          borderColor: 'var(--primary)',
+          backgroundColor: 'rgba(0, 82, 255, 0.05)',
+          tension: 0.4,
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: 'var(--primary)',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: 'var(--primary)',
+          pointHoverBorderColor: 'white',
+          pointHoverBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                return 'Price: $' + context.raw.toFixed(2);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            grid: {
+              color: 'var(--gray-2)',
+              drawBorder: false
+            },
+            ticks: {
+              callback: function(value) {
+                return '$' + value;
+              }
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+
+    // Calculate total cost
+    const quantityInput = document.getElementById('quantity');
+    const totalCostInput = document.getElementById('totalCost');
+    const feeNote = document.getElementById('feeNote');
+    const currentPrice = {{ stock.current_price|default:0 }};
+
+    if (quantityInput && totalCostInput) {
+      quantityInput.addEventListener('input', function() {
+        const quantity = parseFloat(this.value) || 0;
+        const total = quantity * currentPrice;
+        const fee = total * 0.001; // 0.1% fee example
+        totalCostInput.value = (total + fee).toFixed(2);
+        feeNote.textContent = `Includes $${fee.toFixed(2)} fee (0.1%)`;
+      });
+    }
+  });
+
+  // Update chart period
+  function updateChart(period) {
+    // Update active button
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // In production, this would fetch new data
+    showToast(`Loading ${period} chart data...`, 'info');
+  }
+
+  // Add to watchlist
+  function addToWatchlist(symbol) {
+    let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
+
+    if (!watchlist.includes(symbol)) {
+      watchlist.push(symbol);
+      localStorage.setItem('watchlist', JSON.stringify(watchlist));
+      showToast(`${symbol} added to watchlist!`, 'success');
+    } else {
+      showToast(`${symbol} is already in watchlist`, 'info');
+    }
+  }
+
+  // Show company info
+  function showCompanyInfo() {
+    const modal = new bootstrap.Modal(document.getElementById('companyInfoModal'));
+    modal.show();
+  }
+
+  // Add more to holding
+  function addMore(holdingId) {
+    showToast('Add more feature coming soon', 'info');
+  }
+</script>
+
+<style>
+  /* Stock detail specific styles */
+  .holding-row {
+    transition: var(--transition);
+  }
+
+  .holding-row:hover {
+    background: var(--gray-1) !important;
+  }
+
+  .amount {
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .similar-stock-card {
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .similar-stock-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    background: white !important;
+  }
+
+  .btn-group .btn {
+    margin: 0 2px;
+  }
+
+  .btn-group .btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .badge-success,
+  .badge-danger,
+  .badge-secondary {
+    padding: 0.4rem 0.8rem;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  .badge-success {
+    background: rgba(0, 211, 143, 0.1);
+    color: var(--success);
+  }
+
+  .badge-danger {
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--danger);
+  }
+
+  .badge-secondary {
+    background: var(--gray-2);
+    color: var(--text-secondary);
+  }
+
+  .input-group-text {
+    background: transparent;
+    border: 1px solid var(--gray-3);
+    color: var(--text-secondary);
+  }
+
+  .form-select,
+  .form-control {
+    border: 1px solid var(--gray-3);
+  }
+
+  .form-select:focus,
+  .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.1);
+  }
+
+  .price-summary {
+    border: 1px solid var(--gray-3);
+  }
+
+  .web3-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .border-top {
+    border-top-color: var(--gray-3) !important;
+  }
+
+  /* Modal styles */
+  .modal-content {
+    border: none;
+    border-radius: var(--border-radius-md);
+  }
+
+  .modal-header {
+    border-bottom: 1px solid var(--gray-3);
+    padding: 1.25rem 1.5rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,162 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv.*
+*.egg
+*.egg-info/
+dist/
+build/
+ eggs/
+parts/
+bin/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+__pycache__/
+
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
+
+# Google Sheets credentials
+*.json
+!credentials.json.example
+!package.json
+!package-lock.json
+credentials.json
+client_secret.json
+service-account.json
+google-sheets-credentials.json
+
+# PDFs and generated files
+invoices/
+*.pdf
+*.zip
+*.tar
+*.gz
+*.rar
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.sql
+*.sqlite
+*.sqlite3
+
+# Docker
+docker/docker-compose.override.yml
+docker/.env
+*.pid
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+coverage.xml
+*.cover
+*.py,cover
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Virtual environment
+venv/
+env/
+ENV/
+myenv/
+env.bak/
+venv.bak/
+
+# Uploads
+media/
+uploads/
+
+# Secrets
+.secrets
+secrets.yaml
+secrets.yml
+*.pem
+*.key
+*.crt
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Testing
+.tests/
+test_*.py
+_test_*.py
+*_test.py
+tests.py
+
+# Project specific
+!credentials.json.example
+!sample_data/
+!invoices/.gitkeep
+!logs/.gitkeep
+!media/.gitkeep
+
+# Keep empty directories
+**/.gitkeep
