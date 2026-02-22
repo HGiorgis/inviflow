@@ -12,7 +12,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/HGiorgis/inviflow/pulls)
 
 <p align="center">
-  <img src="https://via.placeholder.com/800x400?text=InviFlow+Dashboard" alt="InviFlow Dashboard" width="800"/>
+  <img src="screenshots/thumbnail.jpg" alt="InviFlow Dashboard" width="800"/>
 </p>
 
 ## 🎯 **Complete Setup Guide**
@@ -33,6 +33,36 @@
 | **🐳 Docker Ready**         | Containerized deployment                           |
 | **⏰ Task Automation**      | Celery for background jobs                         |
 | **🔒 Secure**               | Best practices for authentication                  |
+
+---
+
+## 📸 **Screenshots**
+
+### **Stock Management**
+
+|                              Stock List View                              |                            Stock Detail View                             |
+| :-----------------------------------------------------------------------: | :----------------------------------------------------------------------: |
+| <img src="screenshots/stock-list-page.png" alt="Stock List" width="400"/> | <img src="screenshots/stock-detail.png" alt="Stock Detail" width="400"/> |
+|             Browse all available stocks with real-time prices             |             View detailed stock information and price charts             |
+
+### **Deposit & Invoice System**
+
+|                                Deposit Detail                                |                                Deposit Synced                                |
+| :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: |
+| <img src="screenshots/deposit-detail.png" alt="Deposit Detail" width="400"/> | <img src="screenshots/deposit-synced.png" alt="Deposit Synced" width="400"/> |
+|                   Make deposits and generate PDF invoices                    |                       View synchronized deposit status                       |
+
+|                           Deposit Sync Process                           |
+| :----------------------------------------------------------------------: |
+| <img src="screenshots/deposit-sync.png" alt="Deposit Sync" width="800"/> |
+|               Real-time synchronization with Google Sheets               |
+
+### **Google Sheets Integration**
+
+|                                      Stocks Sheet                                       |                                       Deposits Sheet                                        |
+| :-------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------: |
+| <img src="screenshots/google-sheet1-stock.png" alt="Google Sheets Stocks" width="400"/> | <img src="screenshots/google-sheet2-deposit.png" alt="Google Sheets Deposits" width="400"/> |
+|                               Two-way sync for stock data                               |                      Automatic deposit tracking and invoice generation                      |
 
 ---
 
@@ -301,7 +331,8 @@ Copy this email.
 
 Create two worksheets in Google Sheets:
 
-**Sheet 1: Name it "Stocks"**
+**Sheet 1: Name it "Stocks"** (see screenshot below)
+<img src="screenshots/google-sheet1-stock.png" alt="Stocks Sheet Template" width="600"/>
 
 ```
 | Symbol | Name           | Price | Previous Close | Volume   | Last Updated          |
@@ -311,7 +342,8 @@ Create two worksheets in Google Sheets:
 | MSFT   | Microsoft Corp | 315.1 | 312.8          | 18000000 | 2026-02-21 12:02:00 |
 ```
 
-**Sheet 2: Name it "Deposits"**
+**Sheet 2: Name it "Deposits"** (see screenshot below)
+<img src="screenshots/google-sheet2-deposit.png" alt="Deposits Sheet Template" width="600"/>
 
 ```
 | Date       | User Email        | Company   | Amount | Payment Method | Status    | Transaction ID | Invoice Number | Stock | Portfolio       | Sync Timestamp        |
@@ -463,7 +495,8 @@ After setup, you can:
 - [ ] **Explore** the admin interface at `/admin`
 - [ ] **Create** multiple portfolios
 - [ ] **Add** stocks to portfolios
-- [ ] **Make** deposits and download invoices
+- [ ] **Make** deposits and download invoices (see deposit screenshots above)
+- [ ] **View** stock details with price charts (see stock detail screenshot)
 - [ ] **Set up** Google Sheets for full functionality
 - [ ] **Configure** Celery for automation
 - [ ] **Deploy** to production (Render, Heroku, AWS)
@@ -490,6 +523,8 @@ MIT License - see [LICENSE](LICENSE) file.
   <b>⭐ Star this repository if you find it useful! ⭐</b>
   <br>
   Made with ❤️ using Django and Google Sheets API
+  <br>
+  <img src="screenshots/thumbnail.jpg" alt="InviFlow" width="200"/>
   <br>
   © 2026 InviFlow
 </p>
