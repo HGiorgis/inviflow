@@ -7,13 +7,52 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Handle ALLOWED_HOSTS more robustly
+# ========== ALLOWED HOSTS CONFIGURATION ==========
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 # Add Render.com host if present (for production)
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# ========== CSRF CONFIGURATION ==========
+CSRF_TRUSTED_ORIGINS = [
+    'https://inviflow.onrender.com',
+    'http://inviflow.onrender.com',
+]
+
+# Add local development domains
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS.extend([
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'http://localhost:3000',
+    ])
+
+# Add from ALLOWED_HOSTS dynamically
+for host in ALLOWED_HOSTS:
+    if host not in ['localhost', '127.0.0.1']:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
+        CSRF_TRUSTED_ORIGINS.append(f'http://{host}')
+
+# Add from Render hostname
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+    CSRF_TRUSTED_ORIGINS.append(f'http://{RENDER_EXTERNAL_HOSTNAME}')
+
+# Remove duplicates
+CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS))
+
+# Optional: Add any custom domains
+CUSTOM_DOMAIN = os.environ.get('CUSTOM_DOMAIN')
+if CUSTOM_DOMAIN:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{CUSTOM_DOMAIN}')
+    CSRF_TRUSTED_ORIGINS.append(f'http://{CUSTOM_DOMAIN}')
+
+if DEBUG:
+    print(f"🌐 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+    print(f"🔒 CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+# ========================================
 
 # Application definition
 INSTALLED_APPS = [
@@ -64,7 +103,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'inviflow.wsgi.application'
 
-# Database - Use SQLite for development, can be overridden with DATABASE_URL
+# Database - Use SQLite for development
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -121,6 +160,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 GOOGLE_SHEETS_ID = config('GOOGLE_SHEETS_ID', default='')
 
 # Google Sheets Credentials
+# In production (Render): Set GOOGLE_SHEETS_CREDENTIALS env var with minified JSON
+# In development: Can use credentials.json file or set the env var
 GOOGLE_SHEETS_CREDENTIALS = config('GOOGLE_SHEETS_CREDENTIALS', default='credentials.json')
 
 # Optional: Log credentials source for debugging (only in development)
@@ -138,7 +179,7 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
-# Security settings for production
+# ========== PRODUCTION SECURITY SETTINGS ==========
 if not DEBUG:
     # HTTPS settings
     SECURE_SSL_REDIRECT = True
@@ -154,8 +195,12 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
+    
+    # Trust X-Forwarded-Proto header from Render
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# ==================================================
 
-# Logging configuration
+# ========== LOGGING CONFIGURATION ==========
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -217,7 +262,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'google_sheets': {  # Add this for Google Sheets specific logging
+        'google_sheets': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
