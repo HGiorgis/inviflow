@@ -6,6 +6,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db.models import Sum, Count, Q
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.management import call_command
+from django.conf import settings
 from .models import Stock, Profile
 from apps.portfolio.models import Portfolio, Holding, ChartView
 from apps.payments.models import Deposit
@@ -13,8 +17,9 @@ from datetime import datetime, timedelta
 import json
 from decimal import Decimal
 from .forms import CustomUserCreationForm 
+import io
+import sys
 
-    
 class HomeView(TemplateView):
     template_name = 'core/home.html'
     
@@ -164,6 +169,7 @@ class StockDetailView(LoginRequiredMixin, DetailView):
         context['chart_prices'] = json.dumps(prices)
         
         return context
+
 class RegisterView(CreateView):
     form_class = CustomUserCreationForm  
     template_name = 'auth/register.html'
@@ -175,3 +181,61 @@ class RegisterView(CreateView):
         Profile.objects.create(user=self.object)
         messages.success(self.request, 'Account created successfully! Please login.')
         return response
+
+# ========== WEBHOOK FOR GOOGLE SHEETS SYNC (FOR RENDER FREE TIER) ==========
+@csrf_exempt
+def webhook_sync_stocks(request):
+    """Webhook endpoint to trigger Google Sheets sync without shell access"""
+    
+    # Simple security check - use a secret token from settings
+    auth_token = request.headers.get('X-Sync-Token')
+    expected_token = getattr(settings, 'SYNC_SECRET_TOKEN', None)
+    
+    # Also allow via GET parameter for simple browser triggers
+    url_token = request.GET.get('token')
+    
+    if not expected_token:
+        return JsonResponse({'error': 'Sync token not configured'}, status=500)
+    
+    if (not auth_token or auth_token != expected_token) and (not url_token or url_token != expected_token):
+        return JsonResponse({'error': 'Unauthorized - Invalid token'}, status=403)
+    
+    if request.method not in ['POST', 'GET']:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Capture command output
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        
+        # Run the sync command
+        call_command('sync_google_sheets', direction='from_sheets')
+        
+        output = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        
+        # Get stock count
+        stock_count = Stock.objects.count()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Stocks synced successfully',
+            'stock_count': stock_count,
+            'output': output.split('\n')[:10]  # Return first 10 lines of output
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+# ========== HEALTH CHECK ENDPOINT ==========
+def health_check(request):
+    """Health check endpoint for monitoring"""
+    return JsonResponse({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'stock_count': Stock.objects.count(),
+        'user_count': User.objects.count(),
+        'deposit_count': Deposit.objects.count()
+    })

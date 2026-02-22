@@ -200,6 +200,9 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # ==================================================
 
+# Sync security token - generate a random string
+SYNC_SECRET_TOKEN = config('SYNC_SECRET_TOKEN', default='change-this-in-production')
+
 # ========== LOGGING CONFIGURATION ==========
 LOGGING = {
     'version': 1,
